@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GetYouTube Subscribers</title>
+  <meta name="description" content="A small Node.js and MongoDB app that stores YouTube subscribers and serves them as JSON. Try the endpoints and follow the setup guidelines.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23D91F26'/%3E%3Cpath d='M12 9.5v13l11-6.5z' fill='white'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #F6F7FB;
+      --white: #FFFFFF;
+      --ink: #171A2E;
+      --ink-soft: #4B5068;
+      --line: #D5D9E8;
+      --mist: #E8EBF5;
+      --signal: #D91F26;
+      --signal-deep: #B5141A;
+      --teal: #0B7A6B;
+      --panel: #1B1F3B;
+      --panel-raised: #262B52;
+      --panel-text: #DDE1F5;
+
+      --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+      --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+
+      --gutter: clamp(20px, 5vw, 56px);
+      --maxw: 1160px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 1.0625rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 { font-family: var(--font-display); line-height: 1.08; margin: 0; letter-spacing: -0.02em; }
+    p { margin: 0; }
+    a { color: inherit; }
+    code { font-family: var(--font-mono); font-size: 0.92em; }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+
+    :focus-visible { outline: 3px solid #6F7DFF; outline-offset: 2px; border-radius: 6px; }
+
+    .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding-inline: var(--gutter); }
+
+    /* ---------- Header ---------- */
+    .site-header { padding-block: 20px; }
+    .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; letter-spacing: -0.02em; }
+    .brand svg { flex: none; }
+    .site-nav { display: flex; gap: clamp(14px, 3vw, 32px); }
+    .site-nav a { text-decoration: none; font-weight: 500; color: var(--ink-soft); padding: 6px 2px; }
+    .site-nav a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 6px; text-decoration-color: var(--signal); text-decoration-thickness: 2px; }
+
+    /* ---------- Hero ---------- */
+    .hero { padding-block: clamp(32px, 6vw, 72px) clamp(48px, 8vw, 96px); }
+    .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+    .hero h1 { font-size: clamp(2.5rem, 5.6vw, 4.5rem); font-weight: 800; }
+    .hero-lede { margin-top: 22px; max-width: 34em; color: var(--ink-soft); font-size: 1.15rem; }
+    .hero-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 46px; padding: 10px 22px; border-radius: 999px;
+      border: 2px solid var(--ink); background: transparent; font-weight: 600; text-decoration: none;
+      transition: background-color .15s, color .15s, border-color .15s;
+    }
+    .btn:hover { background: var(--ink); color: var(--white); }
+    .btn-primary { background: var(--signal); border-color: var(--signal); color: var(--white); }
+    .btn-primary:hover { background: var(--signal-deep); border-color: var(--signal-deep); }
+
+    /* ---------- Request console ---------- */
+    .console {
+      background: var(--panel); color: var(--panel-text);
+      border-radius: 20px; padding: clamp(18px, 3vw, 28px);
+      box-shadow: 0 30px 60px -30px rgba(23, 26, 46, .55);
+      animation: rise .7s cubic-bezier(.2, .7, .2, 1) both;
+      min-width: 0;
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+    .console h2 { font-size: 1.35rem; font-weight: 600; color: var(--white); }
+    .console-sub { margin-top: 4px; font-size: .95rem; color: #A5ACD0; }
+
+    .seg { margin-top: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; background: #14172D; border-radius: 12px; }
+    .seg button { border: 0; background: transparent; color: #B4BADB; padding: 10px 6px; border-radius: 9px; font-weight: 500; font-size: .95rem; line-height: 1.25; }
+    .seg button:hover { color: var(--white); }
+    .seg button[aria-pressed="true"] { background: var(--panel-raised); color: var(--white); box-shadow: inset 0 0 0 1px #3A4176; }
+
+    .id-row { margin-top: 14px; display: grid; gap: 8px; }
+    .id-row[hidden] { display: none; }
+    .id-row label { font-size: .9rem; color: #B4BADB; }
+    .id-field { display: flex; gap: 8px; flex-wrap: wrap; }
+    .id-field input {
+      flex: 1 1 200px; min-width: 0; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid #3A4176; background: #14172D; color: var(--white); font-family: var(--font-mono); font-size: .92rem;
+    }
+    .id-field input::placeholder { color: #7C84AE; }
+    .link-btn { border: 0; background: none; color: #B9C2FF; text-decoration: underline; text-underline-offset: 4px; padding: 6px 4px; font-size: .92rem; }
+    .link-btn:hover { color: var(--white); }
+    .id-hint { font-size: .9rem; color: #FFB4B4; min-height: 1.3em; }
+
+    .req-bar { margin-top: 16px; display: flex; align-items: center; gap: 10px; background: #14172D; border-radius: 12px; padding: 8px 8px 8px 14px; }
+    .method { flex: none; font-family: var(--font-mono); font-weight: 700; font-size: .85rem; color: #7FE0C5; }
+    .req-path { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: .95rem; overflow-wrap: anywhere; color: var(--white); }
+    .send { flex: none; border: 0; background: var(--signal); color: var(--white); font-weight: 600; padding: 10px 20px; border-radius: 9px; min-height: 42px; }
+    .send:hover { background: #F0343B; }
+    .send:disabled { opacity: .6; cursor: progress; }
+
+    .res-meta { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: .92rem; min-height: 1.6em; }
+    .status { font-family: var(--font-mono); font-weight: 700; }
+    .status.ok { color: #7FE0C5; }
+    .status.bad { color: #FF8A8A; }
+    .status.wait { color: #B4BADB; }
+    .res-time { color: #A5ACD0; }
+
+    .res-body {
+      margin: 8px 0 0; padding: 14px 16px; background: #14172D; border-radius: 12px;
+      font-family: var(--font-mono); font-size: .86rem; line-height: 1.55;
+      max-height: 320px; overflow: auto; white-space: pre; tab-size: 2;
+    }
+    .res-body.flash { animation: fade .35s ease-out; }
+    @keyframes fade { from { opacity: .3; } to { opacity: 1; } }
+    .res-body .k { color: #A9B8FF; }
+    .res-body .s { color: #7FE0C5; }
+    .res-body .n { color: #FFC66D; }
+    .res-body .l { color: #FF8FA3; }
+    .res-body.plain { white-space: pre-wrap; color: #FFD0D0; }
+
+    /* ---------- Sections ---------- */
+    .section { padding-block: clamp(48px, 8vw, 88px); }
+    .section-alt { background: var(--white); border-block: 1px solid var(--line); }
+    .section h2 { font-size: clamp(1.9rem, 3.6vw, 2.75rem); font-weight: 800; }
+    .section-lede { margin-top: 14px; max-width: 40em; color: var(--ink-soft); }
+
+    /* ---------- Subscriber list ---------- */
+    .list-tools { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; justify-content: space-between; }
+    .search { flex: 1 1 280px; max-width: 420px; padding: 12px 16px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--white); }
+    .search:focus-visible { border-color: var(--ink); }
+    .count { color: var(--ink-soft); font-size: .95rem; }
+    .refresh { border: 0; background: none; padding: 4px 6px; font-weight: 600; color: var(--signal-deep); text-decoration: underline; text-underline-offset: 4px; }
+
+    .subs { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid var(--line); }
+    .sub-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto auto; gap: 8px 18px; align-items: center; padding: 16px 4px; border-bottom: 1px solid var(--line); }
+    .avatar { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; }
+    .who { min-width: 0; }
+    .who strong { display: block; font-weight: 600; overflow-wrap: anywhere; }
+    .who span { display: block; color: var(--ink-soft); font-size: .95rem; overflow-wrap: anywhere; }
+    .sub-date { color: var(--ink-soft); font-size: .95rem; white-space: nowrap; }
+    .use-id { border: 1.5px solid var(--line); background: var(--white); border-radius: 999px; padding: 8px 16px; font-weight: 500; font-size: .93rem; white-space: nowrap; }
+    .use-id:hover { border-color: var(--ink); }
+    .empty { padding: 36px 4px; color: var(--ink-soft); border-bottom: 1px solid var(--line); max-width: 44em; }
+    .empty code { background: var(--mist); padding: 2px 7px; border-radius: 6px; color: var(--ink); }
+
+    /* ---------- Guidelines ---------- */
+    .guide-grid { margin-top: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(32px, 5vw, 72px); }
+    .guide-grid h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: 18px; }
+
+    .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; display: grid; gap: 20px; }
+    .steps li { counter-increment: step; position: relative; padding-left: 48px; }
+    .steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 0;
+      width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+      background: var(--ink); color: var(--white); font-weight: 600; font-size: .95rem;
+    }
+    .steps p { color: var(--ink-soft); margin-bottom: 8px; }
+    .cmd { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--panel); color: var(--panel-text); border-radius: 10px; padding: 6px 6px 6px 14px; }
+    .cmd code { overflow-x: auto; white-space: nowrap; padding-block: 6px; }
+    .copy { flex: none; border: 0; background: var(--panel-raised); color: var(--white); border-radius: 7px; padding: 6px 12px; font-size: .88rem; font-weight: 500; min-width: 66px; }
+    .copy:hover { background: #343B6E; }
+
+    .rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+    .rules li { position: relative; padding-left: 36px; }
+    .rules li::before {
+      content: ""; position: absolute; left: 0; top: 3px; width: 22px; height: 22px; border-radius: 50%;
+      background: var(--teal) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M6 11.5l3.3 3.3L16 8' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    }
+    .rules li.warn::before {
+      background-color: var(--signal);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M7 7l8 8M15 7l-8 8' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+
+    .endpoints { margin-top: clamp(40px, 6vw, 64px); }
+    .endpoints h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; }
+    .ep { display: grid; grid-template-columns: 64px minmax(0, 1.1fr) minmax(0, 2fr); gap: 6px 20px; padding: 16px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+    .ep:first-of-type { border-top: 1px solid var(--line); margin-top: 12px; }
+    .ep .m { font-family: var(--font-mono); font-weight: 700; color: var(--teal); }
+    .ep code { background: var(--mist); padding: 3px 9px; border-radius: 7px; justify-self: start; overflow-wrap: anywhere; }
+    .ep p { color: var(--ink-soft); }
+
+    .layout { margin-top: clamp(40px, 6vw, 64px); }
+    .layout h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: 16px; }
+    .tree { margin: 0; background: var(--panel); color: var(--panel-text); border-radius: 14px; padding: 20px 22px; overflow-x: auto; font-family: var(--font-mono); font-size: .9rem; line-height: 1.7; }
+    .tree .note { color: #8E96C4; }
+    .tree .locked { color: #FFC66D; }
+
+    .site-footer { padding-block: 36px 48px; color: var(--ink-soft); font-size: .95rem; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 900px) {
+      .hero .wrap { grid-template-columns: minmax(0, 1fr); }
+      .guide-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .brand .brand-name { display: none; }
+      .sub-row { grid-template-columns: 44px minmax(0, 1fr); }
+      .avatar { width: 44px; height: 44px; }
+      .sub-date { grid-column: 2; }
+      .use-id { grid-column: 2; justify-self: start; }
+      .ep { grid-template-columns: minmax(0, 1fr); }
+      .ep .m { display: none; }
+      .seg button { font-size: .88rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="#top" aria-label="GetYouTube Subscribers, home">
+        <svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#D91F26"/><path d="M12 9.5v13l11-6.5z" fill="#fff"/></svg>
+        <span class="brand-name">GetYouTube Subscribers</span>
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="#subscribers">Subscribers</a>
+        <a href="#guidelines">Guidelines</a>
+        <a href="#endpoints">Endpoints</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="top">
+      <div class="wrap">
+        <div>
+          <h1>Every subscriber, and the channel they follow.</h1>
+          <p class="hero-lede">A small Node.js and MongoDB app that stores YouTube subscribers and serves them as JSON. Send a request to your own server and see the response as it arrives.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#guidelines">Read the guidelines</a>
+            <a class="btn" href="#subscribers">Browse subscribers</a>
+          </div>
+        </div>
+
+        <div class="console" aria-labelledby="console-title">
+          <h2 id="console-title">Try the API</h2>
+          <p class="console-sub">Pick an endpoint and send a request to this server.</p>
+
+          <div class="seg" role="group" aria-label="Endpoint">
+            <button type="button" data-mode="all" aria-pressed="true">All subscribers</button>
+            <button type="button" data-mode="names" aria-pressed="false">Names only</button>
+            <button type="button" data-mode="one" aria-pressed="false">One by ID</button>
+          </div>
+
+          <div class="id-row" id="id-row" hidden>
+            <label for="id-input">Subscriber ID</label>
+            <div class="id-field">
+              <input id="id-input" type="text" autocomplete="off" spellcheck="false" placeholder="Paste an ID from the list below">
+              <button type="button" class="link-btn" id="bad-id">Try an invalid ID</button>
+            </div>
+            <p class="id-hint" id="id-hint" role="status"></p>
+          </div>
+
+          <div class="req-bar">
+            <span class="method">GET</span>
+            <span class="req-path" id="req-path">/subscribers</span>
+            <button type="button" class="send" id="send">Send request</button>
+          </div>
+
+          <div class="res-meta" role="status" aria-live="polite">
+            <span class="status wait" id="res-status">Ready</span>
+            <span class="res-time" id="res-time"></span>
+          </div>
+          <pre class="res-body" id="res-body" tabindex="0" aria-label="Response body"></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="subscribers">
+      <div class="wrap">
+        <h2>Subscribers in your database</h2>
+        <p class="section-lede">This list comes from <code>GET /subscribers</code>. Choose a subscriber to look up their record by ID.</p>
+
+        <div class="list-tools">
+          <input class="search" id="search" type="search" placeholder="Search by name or channel" aria-label="Search subscribers">
+          <div>
+            <span class="count" id="count" role="status"></span>
+            <button type="button" class="refresh" id="refresh">Refresh</button>
+          </div>
+        </div>
+
+        <ul class="subs" id="subs"></ul>
+      </div>
+    </section>
+
+    <section class="section" id="guidelines">
+      <div class="wrap">
+        <h2>Guidelines for building it</h2>
+        <p class="section-lede">Databases sit behind almost every app. With MongoDB, a document database made for high-volume data, you can add, read, update and delete records. This task covers the read side with three endpoints.</p>
+
+        <div class="guide-grid">
+          <div>
+            <h3>Set it up</h3>
+            <ol class="steps">
+              <li>
+                <p>Install MongoDB on your computer and make sure it is running.</p>
+              </li>
+              <li>
+                <p>Install the project's packages.</p>
+                <div class="cmd"><code>npm install</code><button type="button" class="copy" data-copy="npm install">Copy</button></div>
+              </li>
+              <li>
+                <p>Create the database with sample subscribers.</p>
+                <div class="cmd"><code>node src/createDatabase.js</code><button type="button" class="copy" data-copy="node src/createDatabase.js">Copy</button></div>
+              </li>
+              <li>
+                <p>Start the server, then open <code>http://localhost:3000</code>.</p>
+                <div class="cmd"><code>node src/index.js</code><button type="button" class="copy" data-copy="node src/index.js">Copy</button></div>
+              </li>
+            </ol>
+          </div>
+
+          <div>
+            <h3>Follow these rules</h3>
+            <ul class="rules">
+              <li><code>app.js</code> only handles requests and responses.</li>
+              <li>Connect to MongoDB and start the server in <code>index.js</code> or another file, not in <code>app.js</code>.</li>
+              <li>Return status 400 and <code>{ message: error.message }</code> when the ID does not match.</li>
+              <li>Define <code>/subscribers/names</code> before <code>/subscribers/:id</code>, so "names" is not read as an ID.</li>
+              <li class="warn">Do not modify <code>src/models/subscribers.js</code>, <code>src/createDatabase.js</code> or <code>src/index.js</code>. They are there to help you, so read them once.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="endpoints" id="endpoints">
+          <h3>Endpoints</h3>
+          <div class="ep">
+            <span class="m">GET</span>
+            <code>/subscribers</code>
+            <p>An array of subscribers, each one an object.</p>
+          </div>
+          <div class="ep">
+            <span class="m">GET</span>
+            <code>/subscribers/names</code>
+            <p>An array of objects with only two fields: <code>name</code> and <code>subscribedChannel</code>.</p>
+          </div>
+          <div class="ep">
+            <span class="m">GET</span>
+            <code>/subscribers/:id</code>
+            <p>The subscriber with that ID. If the ID does not match, status 400 and <code>{ message: error.message }</code>.</p>
+          </div>
+        </div>
+
+        <div class="layout">
+          <h3>Project layout</h3>
+<pre class="tree">├── public/
+│   └── index.html            <span class="note">this website</span>
+└── src/
+    ├── app.js                <span class="note">routes: requests and responses only</span>
+    ├── index.js              <span class="locked">connects to MongoDB, starts the server (do not edit)</span>
+    ├── createDatabase.js     <span class="locked">creates the local database (do not edit)</span>
+    └── models/
+        └── subscribers.js    <span class="locked">the Mongoose model (do not edit)</span></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">Built with Node.js, Express and MongoDB.</div>
+  </footer>
+
+  <script>
+    (function () {
+      var $ = function (sel) { return document.querySelector(sel); };
+
+      var els = {
+        segButtons: document.querySelectorAll('.seg button'),
+        idRow: $('#id-row'),
+        idInput: $('#id-input'),
+        idHint: $('#id-hint'),
+        badId: $('#bad-id'),
+        reqPath: $('#req-path'),
+        send: $('#send'),
+        status: $('#res-status'),
+        time: $('#res-time'),
+        body: $('#res-body'),
+        search: $('#search'),
+        count: $('#count'),
+        refresh: $('#refresh'),
+        subs: $('#subs')
+      };
+
+      var state = { mode: 'all', subscribers: [] };
+
+      /* ---------- Request helpers ---------- */
+
+      function currentPath() {
+        if (state.mode === 'names') return '/subscribers/names';
+        if (state.mode === 'one') return '/subscribers/' + encodeURIComponent(els.idInput.value.trim());
+        return '/subscribers';
+      }
+
+      function updatePathLabel() {
+        var path = currentPath();
+        els.reqPath.textContent = (state.mode === 'one' && !els.idInput.value.trim()) ? '/subscribers/:id' : path;
+      }
+
+      function request(path) {
+        var started = performance.now();
+        return fetch(path, { headers: { Accept: 'application/json' } }).then(function (res) {
+          return res.text().then(function (text) {
+            var data = null;
+            try { data = JSON.parse(text); } catch (e) { /* not JSON */ }
+            return {
+              status: res.status,
+              statusText: res.statusText,
+              ms: Math.round(performance.now() - started),
+              data: data,
+              text: text
+            };
+          });
+        });
+      }
+
+      /* ---------- Console output ---------- */
+
+      function highlight(json) {
+        var safe = json.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        return safe.replace(/("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g, function (m, str, colon, lit) {
+          if (str) return colon ? '<span class="k">' + str + '</span>' + colon : '<span class="s">' + str + '</span>';
+          if (lit) return '<span class="l">' + m + '</span>';
+          return '<span class="n">' + m + '</span>';
+        });
+      }
+
+      function flash() {
+        els.body.classList.remove('flash');
+        void els.body.offsetWidth;
+        els.body.classList.add('flash');
+      }
+
+      function showResult(r) {
+        var ok = r.status >= 200 && r.status < 300;
+        els.status.className = 'status ' + (ok ? 'ok' : 'bad');
+        els.status.textContent = r.status + (r.statusText ? ' ' + r.statusText : (ok ? ' OK' : ' Error'));
+        els.time.textContent = r.ms + ' ms';
+
+        if (r.data !== null) {
+          els.body.className = 'res-body';
+          els.body.innerHTML = highlight(JSON.stringify(r.data, null, 2));
+        } else {
+          els.body.className = 'res-body plain';
+          els.body.textContent = r.text.slice(0, 600) || '(empty response)';
+        }
+        flash();
+      }
+
+      function showOffline() {
+        els.status.className = 'status bad';
+        els.status.textContent = 'No connection';
+        els.time.textContent = '';
+        els.body.className = 'res-body plain';
+        els.body.textContent = "Can't reach the server.\nStart it with: node src/index.js\nThen open http://localhost:3000 and send the request again.";
+        flash();
+      }
+
+      function runConsole() {
+        if (state.mode === 'one' && !els.idInput.value.trim()) {
+          els.idHint.textContent = 'Paste a subscriber ID, or choose one from the list below.';
+          els.idInput.focus();
+          return Promise.resolve();
+        }
+        els.idHint.textContent = '';
+
+        var path = currentPath();
+        els.send.disabled = true;
+        els.status.className = 'status wait';
+        els.status.textContent = 'Sending…';
+        els.time.textContent = '';
+
+        return request(path).then(function (r) {
+          showResult(r);
+          if (state.mode === 'all' && r.status === 200 && Array.isArray(r.data)) {
+            state.subscribers = r.data;
+            renderList();
+          }
+        }).catch(function () {
+          showOffline();
+          if (state.mode === 'all') { listMessage('offline'); }
+        }).then(function () {
+          els.send.disabled = false;
+        });
+      }
+
+      function setMode(mode) {
+        state.mode = mode;
+        els.segButtons.forEach(function (b) {
+          b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+        });
+        els.idRow.hidden = mode !== 'one';
+        els.idHint.textContent = '';
+        updatePathLabel();
+      }
+
+      els.segButtons.forEach(function (b) {
+        b.addEventListener('click', function () {
+          setMode(b.dataset.mode);
+          if (b.dataset.mode !== 'one') runConsole();
+          else if (els.idInput.value.trim()) runConsole();
+          else els.idInput.focus();
+        });
+      });
+
+      els.idInput.addEventListener('input', updatePathLabel);
+      els.idInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') runConsole(); });
+      els.send.addEventListener('click', runConsole);
+      els.badId.addEventListener('click', function () {
+        els.idInput.value = '123';
+        updatePathLabel();
+        runConsole();
+      });
+
+      /* ---------- Subscriber list ---------- */
+
+      var avatarTones = [
+        ['#FFE1E3', '#8F1116'], ['#DDE7FF', '#1F3A9E'], ['#D6F3EC', '#0A5C50'],
+        ['#FFEBC7', '#7A4A00'], ['#EADFFB', '#4B2A94']
+      ];
+
+      function hash(str) {
+        var h = 0;
+        for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+        return h;
+      }
+
+      function initials(name) {
+        return (name || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
+      }
+
+      function formatDate(value) {
+        var d = new Date(value);
+        if (!value || isNaN(d)) return '';
+        return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      function el(tag, cls, text) {
+        var n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text !== undefined) n.textContent = text;
+        return n;
+      }
+
+      function listMessage(kind, query) {
+        els.subs.replaceChildren();
+        var box = el('li', 'empty');
+        if (kind === 'offline') {
+          box.append("Can't load subscribers because the server is not reachable. Start it with ");
+          box.appendChild(el('code', '', 'node src/index.js'));
+          box.append(', then choose Refresh.');
+          els.count.textContent = '';
+        } else if (kind === 'none') {
+          box.append('No subscribers yet. Run ');
+          box.appendChild(el('code', '', 'node src/createDatabase.js'));
+          box.append(' to add sample data, then choose Refresh.');
+          els.count.textContent = '0 subscribers';
+        } else {
+          box.textContent = 'No subscriber matches "' + query + '". Try a different name or channel.';
+          els.count.textContent = '0 of ' + state.subscribers.length + ' subscribers';
+        }
+        els.subs.appendChild(box);
+      }
+
+      function renderList() {
+        var q = els.search.value.trim().toLowerCase();
+        if (!state.subscribers.length) { listMessage('none'); return; }
+
+        var rows = state.subscribers.filter(function (s) {
+          return (s.name || '').toLowerCase().indexOf(q) !== -1 ||
+                 (s.subscribedChannel || '').toLowerCase().indexOf(q) !== -1;
+        });
+        if (!rows.length) { listMessage('nomatch', els.search.value.trim()); return; }
+
+        els.subs.replaceChildren();
+        rows.forEach(function (s) {
+          var tone = avatarTones[hash(s.name || '') % avatarTones.length];
+          var li = el('li', 'sub-row');
+
+          var avatar = el('div', 'avatar', initials(s.name));
+          avatar.style.background = tone[0];
+          avatar.style.color = tone[1];
+          avatar.setAttribute('aria-hidden', 'true');
+
+          var who = el('div', 'who');
+          who.appendChild(el('strong', '', s.name || 'Unnamed'));
+          who.appendChild(el('span', '', s.subscribedChannel || 'No channel'));
+
+          var date = el('time', 'sub-date', formatDate(s.subscribedDate) ? 'Subscribed ' + formatDate(s.subscribedDate) : '');
+
+          var use = el('button', 'use-id', 'Look up by ID');
+          use.type = 'button';
+          use.setAttribute('aria-label', 'Look up ' + (s.name || 'subscriber') + ' by ID');
+          use.addEventListener('click', function () {
+            setMode('one');
+            els.idInput.value = s._id || '';
+            updatePathLabel();
+            document.getElementById('top').scrollIntoView();
+            runConsole();
+          });
+
+          li.append(avatar, who, date, use);
+          els.subs.appendChild(li);
+        });
+
+        els.count.textContent = rows.length === state.subscribers.length
+          ? state.subscribers.length + ' subscribers'
+          : rows.length + ' of ' + state.subscribers.length + ' subscribers';
+      }
+
+      els.search.addEventListener('input', renderList);
+
+      els.refresh.addEventListener('click', function () {
+        els.refresh.disabled = true;
+        request('/subscribers').then(function (r) {
+          if (r.status === 200 && Array.isArray(r.data)) {
+            state.subscribers = r.data;
+            renderList();
+          } else {
+            listMessage('offline');
+          }
+        }).catch(function () {
+          listMessage('offline');
+        }).then(function () {
+          els.refresh.disabled = false;
+        });
+      });
+
+      /* ---------- Copy buttons ---------- */
+
+      document.querySelectorAll('.copy').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var text = btn.dataset.copy;
+          var done = function () {
+            btn.textContent = 'Copied';
+            setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, function () { btn.textContent = 'Select text'; });
+          } else {
+            btn.textContent = 'Select text';
+          }
+        });
+      });
+
+      /* ---------- Start ---------- */
+      updatePathLabel();
+      runConsole();
+    })();
+  </script>
+</body>
+</html>
